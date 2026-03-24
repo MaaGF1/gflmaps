@@ -1,4 +1,4 @@
-name: Deploy Pages
+name: Deploy to gh-pages
 
 on:
   push:
@@ -8,50 +8,37 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: true
+  contents: write # 必须具有 write 权限才能向 gh-pages 分支推送代码
 
 jobs:
   deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Prepare CN Translation and Bust Cache
+      - name: Apply Chinese Translation Modifications
         run: |
-          # 1. Switch local configuration to Chinese (cn)
+          # 1. 替换默认语言变量为 cn
           sed -i 's/langCode: "en"/langCode: "cn"/' main.js
           
-          # 2. URL that requests remote data
+          # 2. 修复原作者远端数据请求路径错误 (将动态变量 ${config.langCode} 强行替换为 ch)
           sed -i 's/${config.langCode}\/text\/table/ch\/text\/table/g' main.js
           
-          # 3. Add the hash value of the current commit as the version number to the referenced file.
-          sed -i "s/main\.js/main.js?v=${GITHUB_SHA::8}/g" index.html
-          sed -i "s/ui_text\.json/ui_text.json?v=${GITHUB_SHA::8}/g" main.js
-          sed -i "s/instructions\.html/instructions.html?v=${GITHUB_SHA::8}/g" main.js
+          # 3. 添加时间戳防缓存（极力建议保留，防止浏览器死活不刷新）
+          TIMESTAMP=$(date +%s)
+          sed -i "s/main\.js/main.js?v=$TIMESTAMP/g" index.html
+          sed -i "s/ui_text\.json/ui_text.json?v=$TIMESTAMP/g" main.js
+          sed -i "s/instructions\.html/instructions.html?v=$TIMESTAMP/g" main.js
+          
+          echo "✅ 文件替换完成"
 
-          echo "=== Replacement Verification ==="
-          grep "langCode:" main.js
-          grep "ui_text.json?v=" main.js
-
-      - name: Setup GitHub Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      # 将当前目录的所有文件推送到 gh-pages 分支
+      - name: Deploy to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: '.'
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
+          publish_branch: gh-pages
+          force_orphan: true # 每次覆盖都作为一个全新的孤儿分支，防止历史提交越堆越大
+          commit_message: "Auto-deploy to gh-pages with CN translation"
