@@ -1,4 +1,4 @@
-name: Deploy Static Maps to Pages
+name: Deploy Pages
 
 on:
   push:
@@ -26,6 +26,13 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+        # Set default language to CN 
+      - name: Set default language to CN
+        run: |
+          sed -i 's/langCode: "en"/langCode: "cn"/' main.js
+          echo "Language changed successfully. Checking result:"
+          grep "langCode" main.js
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v5
