@@ -26,9 +26,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        
-        # Set default language to CN 
-        - name: Set default language to CN
+
+      # Set default language to CN 
+      - name: Set default language to CN
         run: |
           # 1. Change the local language to cn
           sed -i 's/langCode: "en"/langCode: "cn"/' main.js
