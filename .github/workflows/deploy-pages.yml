@@ -26,13 +26,19 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
+        
         # Set default language to CN 
-      - name: Set default language to CN
+        - name: Set default language to CN
         run: |
+          # 1. Change the local language to cn
           sed -i 's/langCode: "en"/langCode: "cn"/' main.js
+          
+          # 2. Correct the URL for reading the remote Text Table to ch
+          sed -i 's/${config.langCode}\/text\/table/ch\/text\/table/g' main.js
+          
           echo "Language changed successfully. Checking result:"
           grep "langCode" main.js
+          grep "ch/text/table" main.js
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v5
