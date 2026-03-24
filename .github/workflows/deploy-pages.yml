@@ -19,24 +19,24 @@ jobs:
 
       - name: Apply Chinese Translation Modifications
         run: |
-          # 1. 替换默认语言变量为 cn (为了读取本地的 text/cn/ui_text.json)
+          # 1. Replace to CN (text/cn/ui_text.json)
           sed -i 's/langCode: "en"/langCode: "cn"/' main.js
           
-          # 2. 修复原作者远端数据请求路径错误 (将动态变量强行替换为 ch)
+          # 2. Change URL to ch
           sed -i 's/${config.langCode}\/text\/table/ch\/text\/table/g' main.js
           
-          # 3. 【新增】修复地图节点图片的 404 问题 (因为没有 spot/cn 文件夹，强制指向 spot/en)
+          # 3. Set spot still in `spot/en`
           sed -i 's/spot\/${config.langCode}\//spot\/en\//g' main.js
           
-          # 4. 添加时间戳防缓存（极力建议保留，防止浏览器死活不刷新）
+          # 4. Add timestamps to prevent caching
           TIMESTAMP=$(date +%s)
           sed -i "s/main\.js/main.js?v=$TIMESTAMP/g" index.html
           sed -i "s/ui_text\.json/ui_text.json?v=$TIMESTAMP/g" main.js
           sed -i "s/instructions\.html/instructions.html?v=$TIMESTAMP/g" main.js
           
-          echo "✅ 文件替换完成"
+          echo "----- Replace All -----"
 
-      # 将当前目录的所有文件推送到 gh-pages 分支
+      # Push to branch `gh-pages`
       - name: Deploy to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4
         with:
