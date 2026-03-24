@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write # 必须具有 write 权限才能向 gh-pages 分支推送代码
+  contents: write
 
 jobs:
   deploy:
@@ -19,13 +19,16 @@ jobs:
 
       - name: Apply Chinese Translation Modifications
         run: |
-          # 1. 替换默认语言变量为 cn
+          # 1. 替换默认语言变量为 cn (为了读取本地的 text/cn/ui_text.json)
           sed -i 's/langCode: "en"/langCode: "cn"/' main.js
           
-          # 2. 修复原作者远端数据请求路径错误 (将动态变量 ${config.langCode} 强行替换为 ch)
+          # 2. 修复原作者远端数据请求路径错误 (将动态变量强行替换为 ch)
           sed -i 's/${config.langCode}\/text\/table/ch\/text\/table/g' main.js
           
-          # 3. 添加时间戳防缓存（极力建议保留，防止浏览器死活不刷新）
+          # 3. 【新增】修复地图节点图片的 404 问题 (因为没有 spot/cn 文件夹，强制指向 spot/en)
+          sed -i 's/spot\/${config.langCode}\//spot\/en\//g' main.js
+          
+          # 4. 添加时间戳防缓存（极力建议保留，防止浏览器死活不刷新）
           TIMESTAMP=$(date +%s)
           sed -i "s/main\.js/main.js?v=$TIMESTAMP/g" index.html
           sed -i "s/ui_text\.json/ui_text.json?v=$TIMESTAMP/g" main.js
@@ -40,5 +43,5 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: .
           publish_branch: gh-pages
-          force_orphan: true # 每次覆盖都作为一个全新的孤儿分支，防止历史提交越堆越大
+          force_orphan: true 
           commit_message: "Auto-deploy to gh-pages with CN translation"
