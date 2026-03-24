@@ -1,0 +1,47 @@
+name: Deploy to gh-pages
+
+on:
+  push:
+    branches: ["main"]
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Apply Chinese Translation Modifications
+        run: |
+          # 1. Replace to CN (text/cn/ui_text.json)
+          sed -i 's/langCode: "en"/langCode: "cn"/' main.js
+          
+          # 2. Change URL to ch
+          sed -i 's/${config.langCode}\/text\/table/ch\/text\/table/g' main.js
+          
+          # 3. Set spot still in `spot/en`
+          sed -i 's/spot\/${config.langCode}\//spot\/en\//g' main.js
+          
+          # 4. Add timestamps to prevent caching
+          TIMESTAMP=$(date +%s)
+          sed -i "s/main\.js/main.js?v=$TIMESTAMP/g" index.html
+          sed -i "s/ui_text\.json/ui_text.json?v=$TIMESTAMP/g" main.js
+          sed -i "s/instructions\.html/instructions.html?v=$TIMESTAMP/g" main.js
+          
+          echo "----- Replace All -----"
+
+      # Push to branch `gh-pages`
+      - name: Deploy to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
+          publish_branch: gh-pages
+          force_orphan: true 
+          commit_message: "Auto-deploy to gh-pages with CN translation"
