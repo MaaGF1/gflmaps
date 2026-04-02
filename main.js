@@ -3435,3 +3435,64 @@ function firstcreat(){
 }
 
 })();
+
+/* =========================================================
+   GFLH MiniMap (Python WebView)
+   ========================================================= */
+window.updateLiveMap = function(liveData) {
+    console.log("[Live Radar] 接收到实时地图数据:", liveData);
+
+    // 校验数据合法性
+    if (!liveData || !liveData.spot_act_info) {
+        return; 
+    }
+
+    // 1. 将收到的实时点位信息转换为字典，方便后续匹配
+    let liveSpotMap = {};
+    liveData.spot_act_info.forEach(spot => {
+        liveSpotMap[spot.spot_id] = spot;
+    });
+
+    // 2. 遍历当前的渲染数组 dspot，覆盖状态
+    for (let i = 0; i < dspot.length; i++) {
+        let spotId = String(dspot[i].id);
+        
+        // 如果抓包数据里有这个点位的最新状态
+        if (liveSpotMap[spotId]) {
+            let realSpot = liveSpotMap[spotId];
+            
+            // 更新点位的占领归属权：0=中立, 1=我方, 2=敌方/铁血, 3=第三方
+            dspot[i].belong = parseInt(realSpot.belong);
+
+            // 更新敌方队伍
+            if (realSpot.enemy_team_id !== "0") {
+                dspot[i].enemy_team_id = parseInt(realSpot.enemy_team_id);
+            } else {
+                dspot[i].enemy_team_id = 0; // 该点位的敌人已被消灭或不存在
+            }
+            
+            // TODO : 更新我方点位
+        }
+    }
+
+    console.log("[Live Radar] 内存点位状态覆盖完毕，准备重绘...");
+
+    // 3. 触发 UI 重绘
+    // 注意：原版的 missiondisplay() 会将视角偏移量 (xmove, ymove) 归零，
+    // 为了防止重绘时玩家缩放、拖拽好的视角突然复位，我们暂存这些全局变量：
+    let old_xmove = xmove;
+    let old_ymove = ymove;
+    let old_scale = scale;
+
+    // missiondisplay() 会根据 dspot 重新生成底下的表格以及 spotinfo（效能计算、小人代码等），
+    // 并且在其内部会调用一次 drawmap()。
+    missiondisplay(setmessage.srealce == 1); 
+
+    // 恢复玩家原来的视角
+    xmove = old_xmove;
+    ymove = old_ymove;
+    scale = old_scale;
+    
+    // 用正确的视角再画一次
+    drawmap();
+};
